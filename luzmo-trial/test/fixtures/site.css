@@ -1,0 +1,10 @@
+:root { --brand-primary: #55008D; --brand-accent: #00C9B8; --text: #000; --grey: #555555; --bg: #F7F9FB; --font-heading: "Red Hat Display", sans-serif; }
+body { font-family: "Red Hat Text", Helvetica, Arial, sans-serif; color: #000000; background: #ffffff; }
+h1, h2, h3 { font-family: "Red Hat Display", sans-serif; color: #55008D; }
+h1 span { color: #00C9B8; }
+a { color: #55008D; }
+.btn-cta, .button--primary { background-color: #FE5E54; color: #fff; border-radius: 45px; }
+.btn-secondary { background: #00C9B8; }
+.section-light { background: #F7F9FB; }
+.footer { background: #1a1a1a; color: #cccccc; border-top: 1px solid #eeeeee; }
+@media (max-width: 600px) { .hero h1 { color: #55008d; } }

@@ -1,0 +1,13 @@
+{
+  "name": "luzmo-trial-portal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Luzmo trial: from a website and a Luzmo key to a branded, multi-tenant analytics portal with self-service and AI.",
+  "scripts": {
+    "dev": "node scripts/build-kit.js && node dev-server.js",
+    "build": "node scripts/build-kit.js",
+    "build:single": "node build-single.js",
+    "test": "node test/unit.test.js && node test/e2e.test.js"
+  },
+  "engines": { "node": ">=18" }
+}

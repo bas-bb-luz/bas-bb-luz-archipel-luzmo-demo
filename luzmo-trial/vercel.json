@@ -1,0 +1,7 @@
+{
+  "buildCommand": "node scripts/build-kit.js",
+  "outputDirectory": "public",
+  "functions": {
+    "api/*.js": { "maxDuration": 60, "includeFiles": "{public/generator.js,public/core.js,portal.json}" }
+  }
+}

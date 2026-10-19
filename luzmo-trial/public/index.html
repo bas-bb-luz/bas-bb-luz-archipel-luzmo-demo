@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Luzmo trial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="trial-settings.js"></script>
+  <script src="vendor/luzmo-embed.js"></script>
+  <script src="generator.js"></script>
+  <script src="core.js"></script>
+  <script src="howto.js"></script>
+  <script src="track.js"></script>
+  <script src="kit.js"></script>
+  <script src="wizard.js"></script>
+</head>
+<body>
+  <div id="wizard" class="screen" hidden></div>
+
+  <div id="serverSetup" class="screen" hidden>
+    <div class="setup-card">
+      <h1 id="ssTitle"></h1>
+      <p class="lead" id="ssLead"></p>
+      <fieldset id="ssSecretField" hidden>
+        <legend>Setup password</legend>
+        <label>SETUP_SECRET from the server settings <input id="ssSecret" type="password" autocomplete="off" /></label>
+      </fieldset>
+      <div class="actions">
+        <button class="s-btn primary" id="ssSetup">Set up Luzmo and open portal</button>
+        <button class="s-btn" id="ssOpen">Open portal</button>
+      </div>
+      <div id="ssLog" class="w-log" hidden></div>
+    </div>
+  </div>
+
+  <template id="portal-template">
+    <div id="portal">
+      <aside class="sidebar">
+        <div class="brand" id="brandBox"></div>
+        <nav id="nav"></nav>
+        <div class="sidebar-foot">Analytics powered by Luzmo</div>
+      </aside>
+      <main>
+        <div id="ctaBar" class="cta-bar"></div>
+        <header class="topbar">
+          <div>
+            <h1 id="pageTitle"></h1>
+            <p id="pageSubtitle"></p>
+          </div>
+          <div class="topbar-right">
+            <label class="tenant">
+              <span>Viewing as</span>
+              <select id="tenant"></select>
+            </label>
+            <button class="btn how-btn" id="howBtn">How it's built</button>
+          </div>
+        </header>
+        <div id="notice" class="notice" hidden></div>
+        <section id="view"></section>
+      </main>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
