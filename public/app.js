@@ -980,7 +980,18 @@
     backend = serverBackend(config);
     if (!config.configured) {
       $('#setupBtn').hidden = true;
-      return showSetup({ lead: 'Add LUZMO_API_KEY and LUZMO_API_TOKEN to the environment variables of this deployment (Vercel, Settings, Environment Variables), then redeploy.', creds: false });
+      $('#openBtn').hidden = true;
+      showSetup({ lead: `Missing on the server: ${config.missing.join(' and ')}. In Vercel open Settings, Environment Variables, add them with exactly these names, then redeploy (Deployments, the top one, ⋯, Redeploy).`, creds: false });
+      log(config.seenVariables?.length ? `The server sees these variable names: ${config.seenVariables.join(', ')}` : 'The server sees no Luzmo variables at all. They are not saved yet, or this deployment is older than the variables.', 'warn');
+      return;
+    }
+    if (config.luzmoError) {
+      showSetup({ lead: 'The server has a key and token, but Luzmo did not accept them.', creds: false });
+      $('#setupBtn').hidden = true;
+      $('#openBtn').hidden = true;
+      log(config.luzmoError, 'err');
+      log('Paste the key and token into Vercel again with the copy buttons in Luzmo, check the region (EU or US), then redeploy.', 'muted');
+      return;
     }
     const forceSetup = new URLSearchParams(location.search).has('setup');
     if (!config.ready || forceSetup) {

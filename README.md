@@ -5,12 +5,19 @@ A branded Luzmo demo for Archipel Academy. Templated dashboards per organisation
 ## Deploy on Vercel
 
 1. Import this GitHub repository in Vercel (Add New, Project). Framework preset: Other. Keep the other defaults.
-2. Add environment variables (Settings, Environment Variables):
-   - `LUZMO_API_KEY` and `LUZMO_API_TOKEN` from a Luzmo demo account (Profile, API tokens)
+2. Add environment variables in Vercel (Settings, Environment Variables). Names must be exactly these, in capitals with underscores:
+   - `LUZMO_API_KEY` and `LUZMO_API_TOKEN` from a Luzmo demo account (Profile, API tokens). Copy them with the copy buttons in Luzmo.
    - `SETUP_SECRET`: a password for the setup page (recommended)
    - Only for US accounts: `LUZMO_API_HOST=https://api.us.luzmo.com` and `LUZMO_APP_SERVER=https://app.us.luzmo.com`
-3. Deploy, open the URL and click "Set up Luzmo". It loads the data, theme and dashboards (about a minute).
-4. Later runs open the portal straight away. Add `?setup` to the URL to load the data again.
+3. Deploy. If you added the variables after the first deploy, redeploy (Deployments, the top one, ⋯, Redeploy): a deployment only sees variables that existed when it was built.
+4. Open the URL and click "Set up Luzmo". It loads the data, theme and dashboards (about a minute).
+5. Later runs open the portal straight away. Add `?setup` to the URL to load the data again.
+
+Do not put the key or token in `.env.example` or any other file in the repo. Vercel only reads the Environment Variables in its settings.
+
+### Troubleshooting
+
+Open `/api/config` on your deployment. `"configured": false` means the server has no key or token; `"missing"` and `"seenVariables"` show which names it does see (names only, never values). `"luzmoError"` means Luzmo rejected the key or token.
 
 The API key and token stay on the server. The browser only gets short-lived embed tokens, minted per organisation in `api/token.js`.
 

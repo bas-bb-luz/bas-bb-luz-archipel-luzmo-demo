@@ -3,9 +3,17 @@
 const Core = require('../../public/core.js');
 const P = require('../../prospect.json');
 
+// First variable that is set wins. Pasted values often carry spaces or line breaks; keys and tokens never do.
+const KEY_NAMES = ['LUZMO_API_KEY', 'LUZMO_KEY', 'API_KEY', 'LUZMO_APIKEY'];
+const TOKEN_NAMES = ['LUZMO_API_TOKEN', 'LUZMO_TOKEN', 'API_TOKEN', 'LUZMO_APITOKEN'];
+const pick = (names) => names.map((n) => (process.env[n] || '').replace(/\s+/g, '')).find(Boolean);
+
+// Names only, never values: lets the setup screen show what the server can see.
+const visibleNames = () => Object.keys(process.env).filter((n) => /LUZMO|^API_|SETUP_SECRET/i.test(n)).sort();
+
 const env = () => ({
-  key: process.env.LUZMO_API_KEY,
-  token: process.env.LUZMO_API_TOKEN,
+  key: pick(KEY_NAMES),
+  token: pick(TOKEN_NAMES),
   apiHost: (process.env.LUZMO_API_HOST || 'https://api.luzmo.com').replace(/\/$/, ''),
   appServer: (process.env.LUZMO_APP_SERVER || 'https://app.luzmo.com').replace(/\/$/, '')
 });
@@ -55,4 +63,4 @@ function handler(fn) {
   };
 }
 
-module.exports = { P, Core, env, call, getCore, tenantOf, handler };
+module.exports = { P, Core, env, call, getCore, tenantOf, handler, visibleNames, KEY_NAMES, TOKEN_NAMES };
