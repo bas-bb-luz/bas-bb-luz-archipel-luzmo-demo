@@ -929,7 +929,7 @@
       card.style.gridColumn = `span ${chart.w}`;
       const body = el('div', { className: 'chart' });
       try {
-        body.append(vizItem({ type: chart.type, slots: viewCore.specSlots(chart), filters: viewCore.drillFilters(chart, spec.column, value), options: { ...(chart.options || {}), display: { title: false } } }, `drill-${i}-${Date.now()}`, false));
+        body.append(vizItem({ type: chart.type, slots: viewCore.specSlots(chart), filters: viewCore.drillFilters(chart, spec.column, value), options: Core.chartOptions(chart, { display: { title: false } }) }, `drill-${i}-${Date.now()}`, false));
       } catch (err) {
         body.append(el('div', { className: 'placeholder' }, [err.message]));
       }

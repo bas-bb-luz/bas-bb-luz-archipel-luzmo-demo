@@ -53,11 +53,12 @@
         'border-color': hexToRgb(b.primary, 0.1)
       },
       margins: [12, 12],
-      itemSpecific: { padding: 12 },
+      // Charts also read this padding, a donut uses it as the gap between slices. Keep it small.
+      itemSpecific: { rounding: 6, padding: 4 },
       title: { align: 'left', bold: true, italic: false, underline: false, border: false, fontSize: 15, lineHeight: 44 },
       font: { fontFamily: b.font, fontSize: 14 },
       axis: { fontSize: 12 },
-      legend: { type: 'bottom', fontSize: 12, lineHeight: 16 },
+      legend: { type: 'circle', fontSize: 12, lineHeight: 16 },
       tooltip: { background: b.primary, fontSize: 12 },
       colors: b.palette
     };
@@ -212,6 +213,15 @@
     return null;
   }
 
+  // Chart options with sensible defaults: a legend wherever colors carry meaning, tidy donut slices.
+  function chartOptions(chart, extra = {}) {
+    const o = chart.options || {};
+    const hasLegend = chart.type === 'donut-chart' || Object.keys(chart.slots || {}).includes('legend');
+    const base = chart.type === 'donut-chart' ? { slices: { padding: 2, roundedCorners: 4, ...(o.slices || {}) }, legend: { position: 'right', ...(o.legend || {}) } }
+      : hasLegend ? { legend: { position: 'bottom', ...(o.legend || {}) } } : {};
+    return { ...o, ...base, ...extra, display: { ...(hasLegend ? { legend: true } : {}), ...(o.display || {}), ...(extra.display || {}) } };
+  }
+
   // ---------- the Luzmo-side model of one prospect ----------
   function createCore({ P, call, log = () => {}, exportEmail = null }) {
     const state = { datasets: {}, themeId: null, dashboardId: null, pageDashboards: {}, customDashboards: [] };
@@ -313,7 +323,7 @@
           items.push({
             type: chart.type,
             position: { sizeX, sizeY, row, col },
-            options: { ...(chart.options || {}), title: { en: chart.title }, display: { title: true }, ...drillOptions(chart) },
+            options: chartOptions(chart, { title: { en: chart.title }, display: { title: true }, ...drillOptions(chart) }),
             slots: specSlots(chart),
             filters: specFilters(chart)
           });
@@ -607,7 +617,7 @@
   }
 
   return {
-    ALL, CHUNK, ApiError, createCore, dashboardTheme, itemTheme, embedCss, iqContext,
+    ALL, CHUNK, ApiError, createCore, dashboardTheme, itemTheme, embedCss, iqContext, chartOptions,
     queryableSlots, queryableFilters, cleanOptions, chartToItem, nextPosition, itemsOf, dashboardFromAsset,
     rowsOf, nameOf, slugify, pretty, hexToRgb, isObj
   };
