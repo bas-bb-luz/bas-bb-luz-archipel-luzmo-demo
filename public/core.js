@@ -217,7 +217,8 @@
   function chartOptions(chart, extra = {}) {
     const o = chart.options || {};
     const hasLegend = chart.type === 'donut-chart' || Object.keys(chart.slots || {}).includes('legend');
-    const base = chart.type === 'donut-chart' ? { slices: { padding: 2, roundedCorners: 4, ...(o.slices || {}) }, legend: { position: 'right', ...(o.legend || {}) } }
+    // A slices object replaces Luzmo's defaults, so width (the donut hole) must be set as well.
+    const base = chart.type === 'donut-chart' ? { slices: { width: 0.35, padding: 1, ...(o.slices || {}) }, legend: { position: 'right', ...(o.legend || {}) } }
       : hasLegend ? { legend: { position: 'bottom', ...(o.legend || {}) } } : {};
     return { ...o, ...base, ...extra, display: { ...(hasLegend ? { legend: true } : {}), ...(o.display || {}), ...(extra.display || {}) } };
   }
@@ -229,7 +230,9 @@
     // Fingerprint of everything the template dashboards are built from. When a deploy changes it,
     // the dashboards in Luzmo are rebuilt on the next visit, so a push is all it takes.
     const contentVersion = (() => {
-      const src = JSON.stringify({ pages: P.pages, drill: (P.drilldowns || []).map((d) => [d.column, d.label]), theme: dashboardTheme(P), engine: 2 });
+      const options = P.pages.map((p) => p.charts.map((c) => chartOptions(c)));
+      // Bump engine when layout code changes in a way the inputs above do not show.
+      const src = JSON.stringify({ pages: P.pages, options, drill: (P.drilldowns || []).map((d) => [d.column, d.label]), theme: dashboardTheme(P), engine: 3 });
       let h = 5381;
       for (let i = 0; i < src.length; i++) h = ((h * 33) ^ src.charCodeAt(i)) >>> 0;
       return h.toString(36);
