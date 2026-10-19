@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Archipel Insights</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link id="font-link" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Red+Hat+Display:wght@700;800&family=Red+Hat+Text:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="vendor/luzmo-embed.js"></script>
+  <script src="core.js"></script>
+</head>
+<body>
+  <div id="setup" hidden>
+    <div class="setup-card">
+      <h1>Luzmo demo for <span id="setupCompany"></span></h1>
+      <p class="lead" id="setupLead"></p>
+
+      <fieldset id="credFields" hidden>
+        <legend>Luzmo account</legend>
+        <label>Region
+          <select id="region">
+            <option value="https://api.luzmo.com">EU (api.luzmo.com)</option>
+            <option value="https://api.us.luzmo.com">US (api.us.luzmo.com)</option>
+            <option value="custom">Other host</option>
+          </select>
+        </label>
+        <input id="customHost" placeholder="https://api.yourvpc.luzmo.com" hidden />
+        <div class="row2">
+          <label>API key <input id="apiKey" autocomplete="off" spellcheck="false" /></label>
+          <label>API token <input id="apiToken" type="password" autocomplete="off" spellcheck="false" /></label>
+        </div>
+        <label class="remember"><input type="checkbox" id="rememberCreds" /> Remember on this computer</label>
+        <p class="hint">They only go to Luzmo. Without "Remember" nothing is saved.</p>
+      </fieldset>
+
+      <fieldset id="secretField" hidden>
+        <legend>Setup password</legend>
+        <label>SETUP_SECRET from the server settings <input id="setupSecret" type="password" autocomplete="off" /></label>
+      </fieldset>
+
+      <div class="actions">
+        <button class="s-btn primary" id="setupBtn">Set up Luzmo and open portal</button>
+        <button class="s-btn" id="openBtn">Open portal</button>
+      </div>
+      <div id="log" hidden></div>
+    </div>
+  </div>
+
+  <template id="portal-template">
+    <div id="portal" hidden>
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" id="brandMark">A</div>
+          <div>
+            <div class="brand-name" id="brandName">Insights</div>
+            <div class="brand-sub" id="brandSub"></div>
+          </div>
+        </div>
+        <nav id="nav"></nav>
+        <div class="sidebar-foot">Analytics powered by Luzmo</div>
+      </aside>
+      <main>
+        <header class="topbar">
+          <div>
+            <h1 id="pageTitle"></h1>
+            <p id="pageSubtitle"></p>
+          </div>
+          <div class="topbar-right">
+            <label class="tenant">
+              <span>Viewing as</span>
+              <select id="tenant"></select>
+            </label>
+          </div>
+        </header>
+        <div id="notice" class="notice" hidden></div>
+        <section id="view"></section>
+      </main>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

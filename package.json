@@ -1,0 +1,11 @@
+{
+  "name": "archipel-luzmo-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Archipel Insights: a branded Luzmo demo portal with dashboards, self-service (EDE and ACK) and an AI assistant.",
+  "scripts": {
+    "dev": "node dev-server.js",
+    "build:single": "node build-single.js"
+  },
+  "engines": { "node": ">=18" }
+}

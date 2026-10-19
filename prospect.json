@@ -1,0 +1,670 @@
+{
+  "slug": "archipel-academy",
+  "company": "Archipel Academy",
+  "website": "https://archipelacademy.com",
+  "language": "en",
+  "timezone": "Europe/Amsterdam",
+  "brand": {
+    "productName": "Archipel Insights",
+    "logoText": "Archipel",
+    "logoMarkUrl": "https://www.archipelacademy.com/hubfs/Archipel-beeldmerk-purple-RGB.svg",
+    "tagline": "Learning analytics for every organisation on the platform",
+    "font": "Red Hat Text",
+    "headingFont": "Red Hat Display",
+    "primary": "#55008D",
+    "accent": "#00C9B8",
+    "cta": "#FE5E54",
+    "background": "#F7F9FB",
+    "surface": "#FFFFFF",
+    "text": "#000000",
+    "muted": "#555555",
+    "palette": [
+      "#55008D",
+      "#00C9B8",
+      "#FE5E54",
+      "#9B5DE5",
+      "#7FE3D8",
+      "#FFA39C",
+      "#2E004D",
+      "#008C80"
+    ]
+  },
+  "useCase": {
+    "summary": "Archipel offers a learning platform to organisations (HR and L&D teams). They want to give those customers conversational analytics and dashboard customisation inside the platform.",
+    "personas": [
+      "HR / L&D manager at a customer organisation",
+      "Team lead",
+      "Archipel customer success"
+    ],
+    "dataSource": "Microsoft Fabric",
+    "currentTooling": "In-house Power BI team. Evaluating Fabric AI and MS Copilot for reporting.",
+    "mustShow": [
+      "Multi-tenant: each customer only sees its own employees",
+      "Self-service dashboard editing",
+      "AI analyst that answers questions and works with the dashboard",
+      "Archipel look and feel"
+    ]
+  },
+  "tenants": [
+    {
+      "name": "Zorggroep Rivierenland",
+      "industry": "healthcare",
+      "employees": 240
+    },
+    {
+      "name": "Delta Logistics",
+      "industry": "logistics",
+      "employees": 180
+    },
+    {
+      "name": "Gemeente Waalstede",
+      "industry": "government",
+      "employees": 150
+    },
+    {
+      "name": "Polderfood",
+      "industry": "food",
+      "employees": 120
+    },
+    {
+      "name": "Brightwave Telecom",
+      "industry": "telecom",
+      "employees": 210
+    }
+  ],
+  "tenantColumn": "organisation",
+  "datasets": {
+    "learning_activity": {
+      "name": "Archipel | Learning activity",
+      "description": "One row per course enrollment of an employee at a customer organisation on the Archipel learning platform. Use it for enrollments, completion rate, learning hours, scores, satisfaction and spend.",
+      "columns": [
+        {
+          "name": "enrollment_id",
+          "type": "hierarchy",
+          "description": "Unique enrollment id"
+        },
+        {
+          "name": "organisation",
+          "type": "hierarchy",
+          "description": "Customer organisation (tenant) the employee works for"
+        },
+        {
+          "name": "department",
+          "type": "hierarchy",
+          "description": "Department of the employee"
+        },
+        {
+          "name": "employee_id",
+          "type": "hierarchy",
+          "description": "Pseudonymised employee id"
+        },
+        {
+          "name": "job_role",
+          "type": "hierarchy",
+          "description": "Job role of the employee"
+        },
+        {
+          "name": "location",
+          "type": "hierarchy",
+          "description": "Office or site city in the Netherlands"
+        },
+        {
+          "name": "course_title",
+          "type": "hierarchy",
+          "description": "Name of the course or programme"
+        },
+        {
+          "name": "learning_category",
+          "type": "hierarchy",
+          "description": "Topic area of the course"
+        },
+        {
+          "name": "learning_method",
+          "type": "hierarchy",
+          "description": "E-learning, Virtual classroom, Classroom, Blended, Coaching or Masterclass"
+        },
+        {
+          "name": "training_provider",
+          "type": "hierarchy",
+          "description": "Provider delivering the course via the Archipel marketplace"
+        },
+        {
+          "name": "funding",
+          "type": "hierarchy",
+          "description": "Archipel Unlimited (flat fee per employee) or Pay per course"
+        },
+        {
+          "name": "mandatory",
+          "type": "hierarchy",
+          "description": "Yes if the course is mandatory for the role"
+        },
+        {
+          "name": "status",
+          "type": "hierarchy",
+          "description": "Completed, In progress, Not started or Overdue"
+        },
+        {
+          "name": "enrolled_at",
+          "type": "datetime",
+          "description": "Date the employee enrolled"
+        },
+        {
+          "name": "completed_at",
+          "type": "datetime",
+          "description": "Date the course was completed, empty if not completed"
+        },
+        {
+          "name": "is_completed",
+          "type": "numeric",
+          "description": "1 if completed, else 0. Average gives the completion rate"
+        },
+        {
+          "name": "is_overdue",
+          "type": "numeric",
+          "description": "1 if a mandatory course is past its deadline, else 0"
+        },
+        {
+          "name": "planned_hours",
+          "type": "numeric",
+          "description": "Planned study load in hours"
+        },
+        {
+          "name": "hours_spent",
+          "type": "numeric",
+          "description": "Actual learning time in hours"
+        },
+        {
+          "name": "score",
+          "type": "numeric",
+          "description": "Assessment score 0 to 100, empty if not assessed"
+        },
+        {
+          "name": "rating",
+          "type": "numeric",
+          "description": "Learner satisfaction 1 to 5, empty if not rated"
+        },
+        {
+          "name": "cost_eur",
+          "type": "numeric",
+          "description": "Cost of the enrollment in euro. Unlimited courses carry an allocated cost"
+        }
+      ]
+    },
+    "certifications": {
+      "name": "Archipel | Certifications",
+      "description": "One row per certificate held by an employee at a customer organisation. Use it for compliance, expiring and expired certificates.",
+      "columns": [
+        {
+          "name": "certificate_id",
+          "type": "hierarchy",
+          "description": "Unique certificate id"
+        },
+        {
+          "name": "organisation",
+          "type": "hierarchy",
+          "description": "Customer organisation (tenant)"
+        },
+        {
+          "name": "department",
+          "type": "hierarchy",
+          "description": "Department of the employee"
+        },
+        {
+          "name": "employee_id",
+          "type": "hierarchy",
+          "description": "Pseudonymised employee id"
+        },
+        {
+          "name": "job_role",
+          "type": "hierarchy",
+          "description": "Job role of the employee"
+        },
+        {
+          "name": "certificate",
+          "type": "hierarchy",
+          "description": "Certificate or mandatory training name"
+        },
+        {
+          "name": "mandatory",
+          "type": "hierarchy",
+          "description": "Yes if required for the role"
+        },
+        {
+          "name": "status",
+          "type": "hierarchy",
+          "description": "Valid, Expiring within 90 days or Expired"
+        },
+        {
+          "name": "issued_at",
+          "type": "datetime",
+          "description": "Date issued"
+        },
+        {
+          "name": "expires_at",
+          "type": "datetime",
+          "description": "Expiry date"
+        },
+        {
+          "name": "days_to_expiry",
+          "type": "numeric",
+          "description": "Days until expiry, negative when expired"
+        },
+        {
+          "name": "is_compliant",
+          "type": "numeric",
+          "description": "1 if valid or expiring, 0 if expired. Average gives the compliance rate"
+        }
+      ]
+    }
+  },
+  "pages": [
+    {
+      "id": "overview",
+      "title": "Learning overview",
+      "subtitle": "Enrollments, completion and learning time across your organisation",
+      "charts": [
+        {
+          "type": "evolution-number",
+          "title": "Enrollments",
+          "w": 3,
+          "h": 1,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrollment_id",
+                "agg": "count",
+                "label": "Enrollments"
+              }
+            ],
+            "evolution": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrolled_at",
+                "level": 3
+              }
+            ]
+          }
+        },
+        {
+          "type": "evolution-number",
+          "title": "Completion rate",
+          "w": 3,
+          "h": 1,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "is_completed",
+                "agg": "average",
+                "format": ".0%",
+                "label": "Completion rate"
+              }
+            ],
+            "evolution": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrolled_at",
+                "level": 3
+              }
+            ]
+          }
+        },
+        {
+          "type": "evolution-number",
+          "title": "Learning hours",
+          "w": 3,
+          "h": 1,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "hours_spent",
+                "agg": "sum",
+                "format": ",.0f",
+                "label": "Hours"
+              }
+            ],
+            "evolution": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrolled_at",
+                "level": 3
+              }
+            ]
+          }
+        },
+        {
+          "type": "evolution-number",
+          "title": "Avg. satisfaction",
+          "w": 3,
+          "h": 1,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "rating",
+                "agg": "average",
+                "format": ".1f",
+                "label": "Rating"
+              }
+            ],
+            "evolution": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrolled_at",
+                "level": 3
+              }
+            ]
+          }
+        },
+        {
+          "type": "column-chart",
+          "title": "Enrollments per month by learning method",
+          "w": 8,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrollment_id",
+                "agg": "count",
+                "label": "Enrollments"
+              }
+            ],
+            "x-axis": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrolled_at",
+                "level": 3
+              }
+            ],
+            "legend": [
+              {
+                "dataset": "learning_activity",
+                "column": "learning_method"
+              }
+            ]
+          },
+          "options": {
+            "mode": "stacked"
+          }
+        },
+        {
+          "type": "donut-chart",
+          "title": "Status",
+          "w": 4,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "enrollment_id",
+                "agg": "count",
+                "label": "Enrollments"
+              }
+            ],
+            "category": [
+              {
+                "dataset": "learning_activity",
+                "column": "status"
+              }
+            ]
+          }
+        },
+        {
+          "type": "bar-chart",
+          "title": "Completion rate by department",
+          "w": 6,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "is_completed",
+                "agg": "average",
+                "format": ".0%",
+                "label": "Completion rate"
+              }
+            ],
+            "y-axis": [
+              {
+                "dataset": "learning_activity",
+                "column": "department"
+              }
+            ]
+          }
+        },
+        {
+          "type": "bar-chart",
+          "title": "Learning hours by category",
+          "w": 6,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "hours_spent",
+                "agg": "sum",
+                "format": ",.0f",
+                "label": "Hours"
+              }
+            ],
+            "y-axis": [
+              {
+                "dataset": "learning_activity",
+                "column": "learning_category"
+              }
+            ]
+          }
+        },
+        {
+          "type": "heat-table",
+          "title": "Overdue mandatory training by department and category",
+          "w": 12,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "learning_activity",
+                "column": "is_overdue",
+                "agg": "sum",
+                "format": ",.0f",
+                "label": "Overdue"
+              }
+            ],
+            "y-axis": [
+              {
+                "dataset": "learning_activity",
+                "column": "department"
+              }
+            ],
+            "x-axis": [
+              {
+                "dataset": "learning_activity",
+                "column": "learning_category"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "compliance",
+      "title": "Compliance",
+      "subtitle": "Mandatory certificates that are valid, expiring or expired",
+      "charts": [
+        {
+          "type": "evolution-number",
+          "title": "Compliance rate",
+          "w": 4,
+          "h": 1,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "certifications",
+                "column": "is_compliant",
+                "agg": "average",
+                "format": ".0%",
+                "label": "Compliance"
+              }
+            ],
+            "evolution": [
+              {
+                "dataset": "certifications",
+                "column": "issued_at",
+                "level": 3
+              }
+            ]
+          }
+        },
+        {
+          "type": "evolution-number",
+          "title": "Certificates",
+          "w": 4,
+          "h": 1,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "certifications",
+                "column": "certificate_id",
+                "agg": "count",
+                "label": "Certificates"
+              }
+            ],
+            "evolution": [
+              {
+                "dataset": "certifications",
+                "column": "issued_at",
+                "level": 3
+              }
+            ]
+          }
+        },
+        {
+          "type": "evolution-number",
+          "title": "Expiring within 90 days",
+          "w": 4,
+          "h": 1,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "certifications",
+                "column": "certificate_id",
+                "agg": "count",
+                "label": "Expiring"
+              }
+            ],
+            "evolution": [
+              {
+                "dataset": "certifications",
+                "column": "expires_at",
+                "level": 3
+              }
+            ]
+          },
+          "filter": {
+            "column": "status",
+            "value": "Expiring within 90 days"
+          }
+        },
+        {
+          "type": "bar-chart",
+          "title": "Certificate status by certificate",
+          "w": 7,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "certifications",
+                "column": "certificate_id",
+                "agg": "count",
+                "label": "Certificates"
+              }
+            ],
+            "y-axis": [
+              {
+                "dataset": "certifications",
+                "column": "certificate"
+              }
+            ],
+            "legend": [
+              {
+                "dataset": "certifications",
+                "column": "status"
+              }
+            ]
+          },
+          "options": {
+            "mode": "stacked"
+          }
+        },
+        {
+          "type": "bar-chart",
+          "title": "Compliance rate by department",
+          "w": 5,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "certifications",
+                "column": "is_compliant",
+                "agg": "average",
+                "format": ".0%",
+                "label": "Compliance"
+              }
+            ],
+            "y-axis": [
+              {
+                "dataset": "certifications",
+                "column": "department"
+              }
+            ]
+          }
+        },
+        {
+          "type": "column-chart",
+          "title": "Certificates expiring per month",
+          "w": 12,
+          "h": 2,
+          "slots": {
+            "measure": [
+              {
+                "dataset": "certifications",
+                "column": "certificate_id",
+                "agg": "count",
+                "label": "Certificates"
+              }
+            ],
+            "x-axis": [
+              {
+                "dataset": "certifications",
+                "column": "expires_at",
+                "level": 3
+              }
+            ],
+            "legend": [
+              {
+                "dataset": "certifications",
+                "column": "mandatory"
+              }
+            ]
+          },
+          "options": {
+            "mode": "stacked"
+          }
+        }
+      ]
+    }
+  ],
+  "aiSuggestions": [
+    "Which departments have the most overdue mandatory training?",
+    "How did the completion rate of e-learning change over the last 6 months?",
+    "Which certificates expire in the next 90 days and for which teams?",
+    "What is our learning spend per employee by department?"
+  ],
+  "aiBuildSuggestions": [
+    "Build a compliance dashboard per department with expiring certificates",
+    "Build a dashboard on learning spend and hours per learning method"
+  ]
+}
