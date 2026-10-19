@@ -37,7 +37,7 @@ async function call(resource, body) {
 let cached = null;
 async function getCore({ fresh = false, log } = {}) {
   if (!cached || fresh || Date.now() - cached.at > 30000) {
-    const core = Core.createCore({ P, call, log: (...a) => cached?.logger?.(...a) });
+    const core = Core.createCore({ P, call, log: (...a) => cached?.logger?.(...a), exportEmail: (process.env.DEMO_EXPORT_EMAIL || '').trim() || null });
     await core.discover();
     cached = { core, at: Date.now() };
   }

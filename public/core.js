@@ -213,7 +213,7 @@
   }
 
   // ---------- the Luzmo-side model of one prospect ----------
-  function createCore({ P, call, log = () => {} }) {
+  function createCore({ P, call, log = () => {}, exportEmail = null }) {
     const state = { datasets: {}, themeId: null, dashboardId: null, pageDashboards: {}, customDashboards: [] };
 
     function columnRef(dataset, column) {
@@ -245,6 +245,26 @@
       const dataset = Object.values(chart.slots)[0][0].dataset;
       const ref = columnRef(dataset, chart.filter.column);
       return [{ condition: 'and', filters: [{ expression: '? = ?', parameters: [{ columnId: ref.columnId, datasetId: ref.datasetId }, chart.filter.value] }] }];
+    }
+
+    // Charts with a drillable column as a dimension get a click action. Luzmo shows it in the
+    // data point menu and sends a customEvent named drill:<column> to the page.
+    function drillOptions(chart) {
+      const dims = Object.entries(chart.slots).filter(([name]) => name !== 'measure').flatMap(([, items]) => items.map((s) => s.column));
+      const events = (P.drilldowns || []).filter((d) => dims.includes(d.column)).map((d) => ({ name: `drill:${d.column}`, label: { en: d.label } }));
+      return events.length ? { interactivity: { ...(chart.options?.interactivity || {}), customEvents: { events } } } : {};
+    }
+
+    // Filters for a chart on a drill page: its own filter plus column = value on the chart's dataset.
+    function drillFilters(chart, column, value) {
+      const groups = specFilters(chart);
+      const dataset = Object.values(chart.slots)[0][0].dataset;
+      const col = state.datasets[dataset]?.columns?.[column];
+      if (!col) return groups;
+      const leaf = { expression: '? = ?', parameters: [{ columnId: col.id, datasetId: state.datasets[dataset].id }, value] };
+      if (groups.length) groups[0].filters.push(leaf);
+      else groups.push({ condition: 'and', filters: [leaf] });
+      return groups;
     }
 
     function buildContents(items) {
@@ -293,7 +313,7 @@
           items.push({
             type: chart.type,
             position: { sizeX, sizeY, row, col },
-            options: { ...(chart.options || {}), title: { en: chart.title }, display: { title: true } },
+            options: { ...(chart.options || {}), title: { en: chart.title }, display: { title: true }, ...drillOptions(chart) },
             slots: specSlots(chart),
             filters: specFilters(chart)
           });
@@ -468,7 +488,8 @@
         expiry: new Date(Date.now() + days * 864e5).toISOString(),
         username: `${P.slug}-${tenantKey}`,
         name: tenant === ALL ? `${P.company} admin` : `${tenant} HR manager`,
-        email: `demo+${tenantKey}@${P.slug}.example`,
+        // The email prefills the recipient in export and schedule dialogs, so a real inbox helps in demos.
+        email: exportEmail || `demo+${tenantKey}@${P.slug}.example`,
         suborganization: `${P.slug}-${tenantKey}`,
         role: 'designer',
         filters,
@@ -535,11 +556,53 @@
       return itemsOf(await getContents(id));
     }
 
+    // ---------- scheduled exports ----------
+    // Same query as the Otto demo: schedules with their dashboard and creator. Only this portal's
+    // dashboards, and only the ones created by this organisation's embed user unless viewing all.
+    async function listSchedules(tenant) {
+      const ours = new Set([state.dashboardId, ...Object.values(state.pageDashboards), ...state.customDashboards.map((d) => d.id)].filter(Boolean));
+      const username = `${P.slug}-${slugify(tenant)}`;
+      let rows = [];
+      try {
+        rows = rowsOf(await call('schedule', { action: 'get', find: {
+          include: [
+            { model: 'Securable', where: { type: 'dashboard' }, attributes: ['id', 'name', 'type'], jointype: 'inner' },
+            { model: 'User', attributes: ['id', 'name', 'email', 'username'] }
+          ],
+          order: [['updated_at', 'desc']]
+        } }));
+      } catch {
+        rows = rowsOf(await call('export', { action: 'get', find: {} }).catch(() => []));
+      }
+      return rows
+        .map((r) => {
+          const task = r.task || {};
+          const securable = r.securable || r.securables?.[0] || {};
+          const user = r.user || r.users?.[0] || {};
+          return {
+            id: r.id,
+            dashboardId: r.securable_id || securable.id,
+            dashboardName: nameOf(securable) || 'Dashboard',
+            format: typeof task.type === 'string' ? task.type.toUpperCase() : undefined,
+            recipients: Array.isArray(task.emails) ? task.emails : [],
+            subject: task.subject,
+            frequencyQuantity: r.frequency_quantity,
+            frequencyUnit: r.frequency_unit,
+            scheduledAt: r.scheduled_at || r.started_at,
+            active: r.active,
+            lastStatus: r.last_execution_status || null,
+            username: user.username
+          };
+        })
+        .filter((r) => ours.has(r.dashboardId) && (r.format || r.recipients.length))
+        .filter((r) => tenant === ALL || !r.username || r.username === username);
+    }
+
     return {
-      state, ready, discover, mintToken, visibleDashboards,
+      state, ready, discover, mintToken, visibleDashboards, listSchedules,
       setupTheme, setupDataChunk, setupColumns, setupDashboards,
       createDashboard, saveItems, getItems,
-      specSlots, specFilters
+      specSlots, specFilters, drillFilters
     };
   }
 

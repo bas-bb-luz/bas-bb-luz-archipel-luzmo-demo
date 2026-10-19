@@ -22,9 +22,9 @@
     tenant: null,
     current: null,
     editing: {},
-    iqPanel: false,
-    selfTab: 'ede',
     chatOpen: false,
+    chatMax: false,
+    drill: null,
     chats: {},
     builder: null
   };
@@ -87,6 +87,9 @@
       async save(id, items, name) {
         const out = await postJson('/api/dashboards', { op: 'save', tenant: S.tenant, id, items, name });
         S.state.customDashboards = mergeDashboards(out.dashboards);
+      },
+      async exports(tenant) {
+        return (await postJson('/api/exports', { tenant })).schedules;
       }
     };
   }
@@ -143,7 +146,8 @@
         S.tokens[S.tenant] = await core.mintToken(S.tenant, 1);
         return d;
       },
-      save: (id, items, name) => core.saveItems(id, items, name)
+      save: (id, items, name) => core.saveItems(id, items, name),
+      exports: (tenant) => core.listSchedules(tenant)
     };
   }
 
@@ -271,7 +275,7 @@
   const dashName = (id) => visibleDashboards().find((d) => d.id === id)?.name
     || (id === S.state.dashboardId ? 'the demo dashboard' : P().pages.find((p) => S.state.pageDashboards[p.id] === id)?.title || 'this dashboard');
   const routeFor = (id) => {
-    if (id === S.state.dashboardId) return 'self';
+    if (id === S.state.dashboardId) return P().pages[0].id;
     const page = P().pages.find((p) => S.state.pageDashboards[p.id] === id);
     return page ? page.id : `dash:${id}`;
   };
@@ -305,7 +309,7 @@
     if (target === 'builder') {
       ensureBuilder();
       S.builder.items.push(Core.chartToItem(value, S.builder.items));
-      toast('Added to the report builder canvas', { label: 'Open', run: () => { S.selfTab = 'ack'; go('self'); } });
+      toast('Added to the report builder canvas', { label: 'Open', run: () => go('builder') });
       return;
     }
     if (target === 'new') {
@@ -331,7 +335,6 @@
   function openDashboard() {
     const route = S.current || '';
     if (route.startsWith('dash:')) return route.slice(5);
-    if (route === 'self' && S.selfTab === 'ede') return S.state.dashboardId;
     return S.state.pageDashboards?.[route] || null;
   }
 
@@ -527,16 +530,15 @@
     return wrap;
   }
 
-  // Floating assistant on every page, like MIA in the Otto demo. Opens by itself on the first visit.
+  // Floating assistant on every page, like MIA in the Otto demo, bottom right so it never covers the menu. Opens by itself on the first visit.
   function renderChatPopup() {
     $('#aiFab')?.remove();
     $('#aiPop')?.remove();
-    if (S.current === 'ai') return;
-    const pop = el('div', { id: 'aiPop', className: `ai-pop ${S.chatOpen ? 'open' : ''}` }, [
+    const pop = el('div', { id: 'aiPop', className: `ai-pop ${S.chatOpen ? 'open' : ''} ${S.chatMax ? 'max' : ''}` }, [
       el('div', { className: 'ai-pop-head' }, [
         el('span', { className: 'ai-avatar' }, [P().brand.logoText.charAt(0)]),
         el('strong', {}, [AI_NAME()]),
-        el('button', { className: 'link', onclick: () => { go('ai'); } }, ['Full screen']),
+        el('button', { className: 'link', onclick: () => { S.chatMax = !S.chatMax; renderChatPopup(); } }, [S.chatMax ? 'Smaller' : 'Full screen']),
         el('button', { className: 'icon-btn', title: 'Close', onclick: () => { S.chatOpen = false; renderChatPopup(); } }, ['×'])
       ]),
       S.chatOpen ? chatPanel({ compact: true }) : null
@@ -579,9 +581,8 @@
   async function openInBuilder(id) {
     if (isTemplate(id) && existingCopy(id)) id = existingCopy(id).id;
     const items = await backend.getItems(id);
-    S.builder = { ...ensureBuilder(), items: items.filter((i) => i.type !== 'text'), name: isTemplate(id) ? `${dashName(id)} (my version)` : dashName(id), dashboardId: isTemplate(id) ? null : id };
-    S.selfTab = 'ack';
-    go('self');
+    S.builder = { ...ensureBuilder(), items: items.filter((i) => i.type !== 'text'), name: isTemplate(id) ? `${dashName(id)} (my version)` : dashName(id), dashboardId: isTemplate(id) ? null : id, from: S.current };
+    go('builder');
   }
 
   async function renderBuilder(host) {
@@ -641,7 +642,7 @@
           B.slots = [];
         }
         B.type = type;
-        renderSelf();
+        rerenderBuilder();
       }
     }, [label])));
 
@@ -658,9 +659,9 @@
       if (B.editingId) B.items = B.items.map((i) => (i.id === B.editingId ? { ...i, ...item } : i));
       else B.items.push({ id: crypto.randomUUID(), ...item, position: Core.nextPosition(B.items) });
       Object.assign(B, { slots: [], filters: [], options: { display: { title: true } }, editingId: null });
-      renderSelf();
+      rerenderBuilder();
     };
-    const resetBtn = el('button', { className: 'btn', onclick: () => { Object.assign(B, { slots: [], filters: [], options: { display: { title: true } }, editingId: null }); renderSelf(); } }, ['Reset']);
+    const resetBtn = el('button', { className: 'btn', onclick: () => { Object.assign(B, { slots: [], filters: [], options: { display: { title: true } }, editingId: null }); rerenderBuilder(); } }, ['Reset']);
 
     // Prompt to chart: Luzmo's item agent fills the same builder state.
     const aiChat = Object.assign(el('luzmo-ai-chat'), auth, {
@@ -672,11 +673,11 @@
       const chart = d.chart?.generatedChart || d.chart || d.generatedChart;
       if (d.error || !chart?.type) return toast(typeof d.error === 'string' ? d.error : 'The AI could not build that chart');
       Object.assign(B, { mode: 'manual', type: chart.type, slots: chart.slots || [], options: Core.cleanOptions(chart.options || {}), filters: Core.queryableFilters(chart.filters || []), editingId: null });
-      renderSelf();
+      rerenderBuilder();
     });
 
     const modeTabs = el('div', { className: 'tabs' }, [['manual', 'Manual'], ['prompt', 'Prompt to chart']].map(([k, label]) => el('button', {
-      className: k === B.mode ? 'on' : '', onclick: () => { B.mode = k; renderSelf(); }
+      className: k === B.mode ? 'on' : '', onclick: () => { B.mode = k; rerenderBuilder(); }
     }, [label])));
 
     const compose = B.mode === 'prompt'
@@ -703,9 +704,9 @@
       if ((action === 'edit' || action === 'edit-data') && item?.id) {
         const found = B.items.find((i) => i.id === item.id);
         if (found) Object.assign(B, { editingId: found.id, type: found.type, slots: structuredClone(found.slots), options: Core.cleanOptions(found.options), filters: found.filters || [], mode: 'manual', panel: 'data' });
-        renderSelf();
+        rerenderBuilder();
       } else if (action === 'delete' || action === 'clone') {
-        renderSelf();
+        rerenderBuilder();
       }
     });
     const nameInput = el('input', { className: 'ack-name', placeholder: 'Report name', value: B.name });
@@ -729,7 +730,7 @@
         saveBtn.disabled = false;
       }
     } }, [B.dashboardId ? 'Save' : 'Save as new dashboard']);
-    const clearBtn = el('button', { className: 'btn', onclick: () => { S.builder = null; ensureBuilder(); renderSelf(); } }, ['Clear canvas']);
+    const clearBtn = el('button', { className: 'btn', onclick: () => { S.builder = null; ensureBuilder(); rerenderBuilder(); } }, ['Clear canvas']);
 
     host.append(
       el('div', { className: 'ack-top' }, [el('aside', { className: 'card ack-fields' }, [el('h3', {}, ['Data fields']), fields]), el('section', { className: 'card' }, [compose])]),
@@ -770,9 +771,10 @@
   function routes() {
     return [
       ...P().pages.map((p) => ({ id: p.id, group: 'Analytics', label: p.title, title: p.title, subtitle: p.subtitle, render: () => renderDashboardPage(S.state.pageDashboards?.[p.id], p) })),
-      { id: 'self', group: 'Self-service', label: 'Self-service', title: 'Self-service', subtitle: 'Build your own reports with the dashboard editor or the report builder', render: renderSelf },
-      { id: 'ai', group: 'Self-service', label: AI_NAME(), badge: 'AI', title: AI_NAME(), subtitle: 'Ask questions in plain language. Get answers, charts and dashboards.', render: () => $('#view').append(el('div', { className: 'card ai-page' }, [chatPanel({ compact: false })])) },
-      ...visibleDashboards().map((d) => ({ id: `dash:${d.id}`, group: 'My dashboards', label: d.name, title: d.name, subtitle: 'Your own dashboard. Edit it yourself or ask the AI to change it.', render: () => renderDashboardPage(d.id, null) }))
+      ...visibleDashboards().map((d) => ({ id: `dash:${d.id}`, group: 'My dashboards', label: d.name, title: d.name, subtitle: 'Your own dashboard. Edit it yourself or ask the AI to change it.', render: () => renderDashboardPage(d.id, null) })),
+      { id: 'exports', group: 'Reports', label: 'Scheduled exports', title: 'Scheduled exports', subtitle: 'Dashboards sent by email on a schedule, as PDF or PNG', render: renderExports },
+      { id: 'builder', hidden: true, title: 'Report builder', subtitle: 'Pick fields, preview the chart, add it to the canvas and save', render: renderBuilderRoute },
+      { id: 'drill', hidden: true, title: S.drill?.value || 'Detail', subtitle: S.drill?.spec.subtitle || '', render: renderDrill }
     ];
   }
 
@@ -780,14 +782,52 @@
     const nav = $('#nav');
     nav.innerHTML = '';
     let group = null;
-    for (const r of routes()) {
+    const navActive = S.current === 'drill' ? S.drill?.from : S.current === 'builder' ? S.builder?.from : S.current;
+    for (const r of routes().filter((x) => !x.hidden)) {
+      if (r.group === 'Reports' && group !== 'My dashboards') {
+        nav.append(el('div', { className: 'nav-label' }, ['My dashboards']), createNewButton());
+        group = 'My dashboards';
+      } else if (r.group === 'Reports') {
+        nav.append(createNewButton());
+      }
       if (r.group !== group) { group = r.group; nav.append(el('div', { className: 'nav-label' }, [group])); }
-      const btn = el('button', { className: r.id === S.current ? 'active' : '', onclick: () => go(r.id) }, [el('span', { className: 'nav-text' }, [r.label])]);
+      const btn = el('button', { className: r.id === navActive ? 'active' : '', onclick: () => go(r.id) }, [el('span', { className: 'nav-text' }, [r.label])]);
       if (r.badge) btn.append(el('span', { className: 'badge' }, [r.badge]));
       nav.append(btn);
     }
-    if (group !== 'My dashboards') nav.append(el('div', { className: 'nav-label' }, ['My dashboards']));
-    nav.append(el('button', { className: 'nav-new', onclick: () => { S.builder = null; S.selfTab = 'ack'; go('self'); } }, ['+ Create new']));
+  }
+
+  // "+ Create new" asks which editor to start in.
+  function createNewButton() {
+    const btn = el('button', { className: 'nav-new' }, ['+ Create new']);
+    btn.onclick = () => openMenu(btn, [
+      { label: 'Full editor', hint: 'Luzmo\'s drag-and-drop editor with every chart type and formulas', run: async () => {
+        const name = window.prompt('Name for the new dashboard', 'My dashboard');
+        if (!name) return;
+        try {
+          const id = await createDashboard(name.trim(), []);
+          S.editing[id] = true;
+          go(`dash:${id}`);
+        } catch (err) { toast(`Could not create the dashboard. ${err.message}`); }
+      } },
+      { label: 'Report builder', hint: 'Pick fields, preview and build a report step by step', run: () => { S.builder = null; ensureBuilder().from = S.current; go('builder'); } }
+    ]);
+    return btn;
+  }
+
+  // Small dropdown menu under a button.
+  function openMenu(anchor, entries) {
+    $('#popMenu')?.remove();
+    const menu = el('div', { id: 'popMenu', className: 'pop-menu' }, entries.map((e) => el('button', { onclick: () => { menu.remove(); e.run(); } }, [
+      el('strong', {}, [e.label]), e.hint ? el('span', {}, [e.hint]) : null
+    ])));
+    const r = anchor.getBoundingClientRect();
+    menu.style.top = `${r.bottom + window.scrollY + 6}px`;
+    menu.style.left = `${Math.min(r.left + window.scrollX, window.innerWidth - 300)}px`;
+    document.body.append(menu);
+    setTimeout(() => document.addEventListener('click', function close(ev) {
+      if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', close); }
+    }), 0);
   }
 
   function go(id) {
@@ -816,52 +856,138 @@
     return dash;
   }
 
-  // View a dashboard, with an Edit button (EDE) and an "Edit in report builder" button (ACK).
+  const EXPORT_SUBJECT = () => ({ en: `${P().brand.productName}: dashboard export` });
+  const EXPORT_MESSAGE = (type) => ({ en: type === 'scheduled' ? `Your scheduled export from ${P().brand.productName}.` : `Your dashboard export from ${P().brand.productName}.` });
+
+  // Every dashboard: one Edit menu (full editor or report builder), an Export menu, and drill-down on click.
   function renderDashboardPage(id, page) {
     if (!id) {
       if (page) return renderFlexFallback(page);
       return $('#view').append(el('div', { className: 'card placeholder', style: 'padding:48px' }, ['This dashboard is not available.']));
     }
     const editing = !!S.editing[id];
-    const toolbar = el('div', { className: 'toolbar' }, [
-      el('span', { className: 'hint-inline' }, [editing ? 'You are editing. Save in the editor toolbar.' : isTemplate(id) ? 'Shared template. Edits are saved for your organisation.' : 'Your own dashboard.']),
-      el('button', { className: `btn ${editing ? '' : 'primary'}`, onclick: () => { S.editing[id] = !editing; go(S.current); } }, [editing ? 'Done editing' : 'Edit']),
-      el('button', { className: 'btn', onclick: () => openInBuilder(id).catch((err) => toast(err.message)) }, ['Edit in report builder']),
-      el('button', { className: 'btn', onclick: () => { S.chatOpen = true; renderChatPopup(); } }, ['Ask AI to change it'])
+    const dash = dashboardEmbed(id, editing ? 'editLimited' : 'view');
+    const editBtn = el('button', { className: `btn ${editing ? '' : 'primary'}` }, [editing ? 'Done editing' : 'Edit dashboard']);
+    editBtn.onclick = () => {
+      if (editing) { S.editing[id] = false; return go(S.current); }
+      openMenu(editBtn, [
+        { label: 'Full editor', hint: 'Luzmo\'s drag-and-drop editor, right here. Every chart type, formulas and filters', run: () => { S.editing[id] = true; go(S.current); } },
+        { label: 'Report builder', hint: 'Your own builder: pick fields, preview each chart, arrange the canvas', run: () => openInBuilder(id).catch((err) => toast(err.message)) }
+      ]);
+    };
+    const exportBtn = el('button', { className: 'btn' }, ['Export']);
+    const run = (label, fn) => async () => {
+      try { await fn(); } catch (err) { toast(`${label} failed. ${err?.message || 'Try again in a moment.'}`); }
+    };
+    exportBtn.onclick = () => openMenu(exportBtn, [
+      { label: 'Download PDF', hint: 'The dashboard as you see it, filters included', run: run('Download', () => dash.exportDashboard('pdf')) },
+      { label: 'Download PNG', hint: 'An image to paste into a deck or email', run: run('Download', () => dash.exportDashboard('png')) },
+      { label: 'Email now', hint: 'Send this dashboard to one or more people', run: run('Email', () => dash.sendExportEmail('once', EXPORT_SUBJECT(), EXPORT_MESSAGE('once'))) },
+      { label: 'Schedule email', hint: 'Daily, weekly or monthly, as PDF or PNG', run: run('Schedule', () => dash.sendExportEmail('scheduled', EXPORT_SUBJECT(), EXPORT_MESSAGE('scheduled'))) }
     ]);
-    $('#view').append(toolbar, el('div', { className: `page-dash ${editing ? 'editing' : ''}` }, [dashboardEmbed(id, editing ? 'editLimited' : 'view')]));
+    const hint = editing ? 'You are editing. Save in the editor toolbar.'
+      : (P().drilldowns || []).length ? 'Tip: click a department or category in a chart and choose Drill into.'
+        : isTemplate(id) ? 'Shared template. Edits are saved for your organisation.' : 'Your own dashboard.';
+    const toolbar = el('div', { className: 'toolbar' }, [el('span', { className: 'hint-inline' }, [hint]), ...(editing ? [] : [exportBtn]), editBtn]);
+    dash.addEventListener('customEvent', (e) => handleDrill(e.detail?.data, S.current));
+    $('#view').append(toolbar, el('div', { className: `page-dash ${editing ? 'editing' : ''}` }, [dash]));
+  }
+
+  // ---------- drill-down ----------
+  // The chart's click action sends drill:<column> plus the clicked data point. We read the value from it.
+  function handleDrill(data, from) {
+    const strings = [];
+    const walk = (v, depth = 0) => {
+      if (depth > 8 || v == null) return;
+      if (typeof v === 'string') strings.push(v);
+      else if (Array.isArray(v)) v.forEach((x) => walk(x, depth + 1));
+      else if (typeof v === 'object') Object.values(v).forEach((x) => walk(x, depth + 1));
+    };
+    walk(data);
+    const eventName = strings.find((x) => x.startsWith('drill:'));
+    const spec = (P().drilldowns || []).find((d) => `drill:${d.column}` === eventName) || (P().drilldowns || []).find((d) => strings.some((x) => d.values.includes(x)));
+    if (!spec) return;
+    const value = strings.find((x) => spec.values.includes(x));
+    if (!value) return toast('Could not read which item you clicked.');
+    S.drill = { spec, value, from };
+    go('drill');
+  }
+
+  function renderDrill() {
+    if (!S.drill) return go(P().pages[0].id);
+    const { spec, value, from } = S.drill;
+    const back = routes().find((r) => r.id === from);
+    const viewCore = Core.createCore({ P: P(), call: async () => { throw new Error('read only'); } });
+    Object.assign(viewCore.state, S.state);
+    const crumbs = el('div', { className: 'crumbs' }, [
+      el('button', { className: 'link', onclick: () => go(from) }, [`← ${back?.title || 'Back'}`]),
+      el('span', {}, [' / ']), el('span', {}, [value])
+    ]);
+    const grid = el('div', { className: 'grid' });
+    spec.charts.forEach((chart, i) => {
+      const card = el('div', { className: `card h${chart.h}` }, [el('h3', {}, [chart.title])]);
+      card.style.gridColumn = `span ${chart.w}`;
+      const body = el('div', { className: 'chart' });
+      try {
+        body.append(vizItem({ type: chart.type, slots: viewCore.specSlots(chart), filters: viewCore.drillFilters(chart, spec.column, value), options: { ...(chart.options || {}), display: { title: false } } }, `drill-${i}-${Date.now()}`, false));
+      } catch (err) {
+        body.append(el('div', { className: 'placeholder' }, [err.message]));
+      }
+      card.append(body);
+      grid.append(card);
+    });
+    $('#view').append(crumbs, grid);
+  }
+
+  // ---------- scheduled exports ----------
+  async function renderExports() {
+    const view = $('#view');
+    const intro = el('div', { className: 'card exports-intro' }, [
+      el('h3', {}, ['Set up a scheduled export']),
+      el('p', {}, ['Open any dashboard, click Export and choose Schedule email. Pick the people, the format (PDF or PNG) and how often. Luzmo renders the dashboard with your organisation\'s data and sends it.'])
+    ]);
+    const listHost = el('div', { className: 'exports-list' }, [el('div', { className: 'placeholder', style: 'padding:32px' }, ['Loading schedules'])]);
+    view.append(intro, listHost);
+    try {
+      const rows = await backend.exports(S.tenant);
+      listHost.innerHTML = '';
+      if (!rows.length) return listHost.append(el('div', { className: 'card placeholder', style: 'padding:32px' }, ['No scheduled exports yet for this organisation.']));
+      for (const r of rows) {
+        const when = r.scheduledAt ? new Date(r.scheduledAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : 'not planned';
+        listHost.append(el('div', { className: 'card export-card' }, [
+          el('div', { className: 'export-head' }, [el('strong', {}, [r.dashboardName]), el('span', { className: `status ${r.active === false ? 'off' : 'on'}` }, [r.active === false ? 'Paused' : 'Active'])]),
+          el('dl', {}, [
+            el('dt', {}, ['Format']), el('dd', {}, [r.format || 'PDF']),
+            el('dt', {}, ['Every']), el('dd', {}, [r.frequencyQuantity ? `${r.frequencyQuantity} ${r.frequencyUnit || ''}` : '-']),
+            el('dt', {}, ['Next run']), el('dd', {}, [when]),
+            el('dt', {}, ['Recipients']), el('dd', {}, [(r.recipients || []).join(', ') || '-']),
+            el('dt', {}, ['Last run']), el('dd', {}, [r.lastStatus || '-'])
+          ])
+        ]));
+      }
+    } catch (err) {
+      listHost.innerHTML = '';
+      listHost.append(el('div', { className: 'ai-error' }, [`Could not load schedules. ${err.message}`]));
+    }
   }
 
   function renderFlexFallback(page) {
     $('#view').append(el('div', { className: 'notice' }, [`${page.title} has no Luzmo dashboard yet. Run the setup again.`]));
   }
 
-  function renderSelf() {
-    if (S.current !== 'self') return go('self');
-    const view = $('#view');
-    view.innerHTML = '';
-    const tabs = el('div', { className: 'tabs big' }, [['ede', 'Dashboard editor (EDE)'], ['ack', 'Report builder (ACK)']].map(([k, label]) => el('button', {
-      className: k === S.selfTab ? 'on' : '', onclick: () => { S.selfTab = k; renderSelf(); renderChatPopup(); }
-    }, [label])));
-    view.append(tabs);
-    if (S.selfTab === 'ede') {
-      if (!S.state.dashboardId) return view.append(el('div', { className: 'card placeholder', style: 'padding:48px' }, ['The demo dashboard is not in Luzmo yet. Run the setup again.']));
-      const bar = el('div', { className: 'toolbar' }, [
-        el('span', { className: 'hint-inline' }, ['Full Luzmo editor inside the portal. Drag charts, add new ones and save.']),
-        el('button', { className: 'btn', onclick: () => { S.iqPanel = !S.iqPanel; renderSelf(); } }, [S.iqPanel ? 'Close Luzmo IQ' : 'Luzmo IQ panel'])
-      ]);
-      const wrap = el('div', { className: `builder ${S.iqPanel ? 'with-chat' : ''}` }, [el('div', { className: 'card' }, [dashboardEmbed(S.state.dashboardId, 'editLimited')])]);
-      if (S.iqPanel) {
-        const chat = el('luzmo-iq-embed-chat');
-        Object.assign(chat, luzmoProps(), { dashboardId: S.state.dashboardId, availableDatasets: datasetIds() });
-        wrap.append(el('div', { className: 'card' }, [chat]));
-      }
-      view.append(bar, wrap);
-    } else {
-      const host = el('div', { className: 'ack-builder' });
-      view.append(host);
-      renderBuilder(host);
-    }
+  function rerenderBuilder() {
+    if (S.current !== 'builder') return go('builder');
+    $('#view').innerHTML = '';
+    renderBuilderRoute();
+  }
+
+  function renderBuilderRoute() {
+    const B = ensureBuilder();
+    const back = routes().find((r) => r.id === B.from && !r.hidden);
+    if (back) $('#view').append(el('div', { className: 'crumbs' }, [el('button', { className: 'link', onclick: () => go(back.id) }, [`← ${back.title}`])]));
+    const host = el('div', { className: 'ack-builder' });
+    $('#view').append(host);
+    renderBuilder(host);
   }
 
   function notice(msg) {
