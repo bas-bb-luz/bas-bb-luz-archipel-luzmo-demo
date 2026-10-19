@@ -77,7 +77,6 @@
     if (!framed) {
       theme.borders = { 'border-style': 'none', 'border-radius': '0px', 'border-top-width': '0px', 'border-right-width': '0px', 'border-bottom-width': '0px', 'border-left-width': '0px' };
       theme.boxShadow = { size: 'none', color: 'rgba(0,0,0,0)' };
-      theme.margins = [0, 0];
     }
     return theme;
   }
@@ -218,6 +217,10 @@
     const o = chart.options || {};
     const hasLegend = chart.type === 'donut-chart' || Object.keys(chart.slots || {}).includes('legend');
     // A slices object replaces Luzmo's defaults, so width (the donut hole) must be set as well.
+    // Number tiles show the total. The card title is the label, so the tile does not repeat it.
+    if (chart.type === 'evolution-number') {
+      return { showTitle: false, numberFontSize: 44, ...o, ...extra, display: { ...(o.display || {}), ...(extra.display || {}) } };
+    }
     const base = chart.type === 'donut-chart' ? { slices: { width: 0.35, padding: 1, ...(o.slices || {}) }, legend: { position: 'right', ...(o.legend || {}) } }
       : hasLegend ? { legend: { position: 'bottom', ...(o.legend || {}) } } : {};
     return { ...o, ...base, ...extra, display: { ...(hasLegend ? { legend: true } : {}), ...(o.display || {}), ...(extra.display || {}) } };
@@ -290,14 +293,12 @@
     }
 
     function buildContents(items) {
-      const normalized = items.map((it) => ({
-        id: it.id || uuid(),
-        type: it.type,
-        position: it.position || { col: 0, row: 0, sizeX: 24, sizeY: 20 },
-        options: it.type === 'text' ? it.options : cleanOptions(it.options),
-        slots: queryableSlots(it.slots || []),
-        filters: it.type === 'text' ? [] : queryableFilters(it.filters || [])
-      }));
+      const normalized = items.map((it) => {
+        const base = { id: it.id || uuid(), type: it.type, position: it.position || { col: 0, row: 0, sizeX: 24, sizeY: 20 } };
+        // Text items carry no data, so no slots or filters.
+        if (it.type === 'text') return { ...base, options: it.options };
+        return { ...base, options: cleanOptions(it.options), slots: queryableSlots(it.slots || []), filters: queryableFilters(it.filters || []) };
+      });
       const theme = state.themeId ? { id: state.themeId } : dashboardTheme(P);
       const view = (screenModus) => ({
         screenModus,
@@ -323,7 +324,7 @@
       let row = 0;
       for (const page of pages) {
         if (withHeaders) {
-          items.push({ type: 'text', position: { sizeX: 48, sizeY: 4, row, col: 0 }, options: { content: { en: `<h2>${page.title}</h2>` }, display: { title: false } }, slots: [] });
+          items.push({ type: 'text', position: { sizeX: 48, sizeY: 4, row, col: 0 }, options: { html: { en: `<h2>${page.title}</h2>` }, padding: { left: 8, right: 8, top: 8, bottom: 0 }, display: { title: false } }, slots: [] });
           row += 4;
         }
         let col = 0;

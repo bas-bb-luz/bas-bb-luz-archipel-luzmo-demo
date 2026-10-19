@@ -276,13 +276,6 @@
                 "agg": "count",
                 "label": "Enrollments"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -299,13 +292,6 @@
                 "agg": "average",
                 "format": ".0%",
                 "label": "Completion rate"
-              }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
               }
             ]
           }
@@ -324,13 +310,6 @@
                 "format": ",.0f",
                 "label": "Hours"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -347,13 +326,6 @@
                 "agg": "average",
                 "format": ".1f",
                 "label": "Rating"
-              }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
               }
             ]
           }
@@ -508,13 +480,6 @@
                 "format": ".0%",
                 "label": "Compliance"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "certifications",
-                "column": "issued_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -531,13 +496,6 @@
                 "agg": "count",
                 "label": "Certificates"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "certifications",
-                "column": "issued_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -553,13 +511,6 @@
                 "column": "certificate_id",
                 "agg": "count",
                 "label": "Expiring"
-              }
-            ],
-            "evolution": [
-              {
-                "dataset": "certifications",
-                "column": "expires_at",
-                "level": 3
               }
             ]
           },
@@ -709,13 +660,6 @@
                 "agg": "count",
                 "label": "Enrollments"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -732,13 +676,6 @@
                 "agg": "average",
                 "format": ".0%",
                 "label": "Completion rate"
-              }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
               }
             ]
           }
@@ -757,13 +694,6 @@
                 "format": ",.0f",
                 "label": "Overdue"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -780,13 +710,6 @@
                 "agg": "average",
                 "format": ".0%",
                 "label": "Compliance"
-              }
-            ],
-            "evolution": [
-              {
-                "dataset": "certifications",
-                "column": "issued_at",
-                "level": 3
               }
             ]
           }
@@ -931,13 +854,6 @@
                 "agg": "count",
                 "label": "Enrollments"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -955,13 +871,6 @@
                 "format": ".0%",
                 "label": "Completion rate"
               }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
-              }
             ]
           }
         },
@@ -978,13 +887,6 @@
                 "agg": "average",
                 "format": ".1f",
                 "label": "Rating"
-              }
-            ],
-            "evolution": [
-              {
-                "dataset": "learning_activity",
-                "column": "enrolled_at",
-                "level": 3
               }
             ]
           }
