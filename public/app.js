@@ -138,6 +138,7 @@
         await core.discover();
         if (!core.ready()) throw new Error('No earlier setup found in this Luzmo account. Use "Set up Luzmo" first.');
         log('Found the demo in Luzmo', 'ok');
+        if (core.needsSync()) await core.syncTemplates();
       },
       token: (tenant) => core.mintToken(tenant, 1),
       getItems: (id) => core.getItems(id),

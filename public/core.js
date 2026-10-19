@@ -224,7 +224,16 @@
 
   // ---------- the Luzmo-side model of one prospect ----------
   function createCore({ P, call, log = () => {}, exportEmail = null }) {
-    const state = { datasets: {}, themeId: null, dashboardId: null, pageDashboards: {}, customDashboards: [] };
+    const state = { datasets: {}, themeId: null, dashboardId: null, pageDashboards: {}, customDashboards: [], templateVersions: {} };
+
+    // Fingerprint of everything the template dashboards are built from. When a deploy changes it,
+    // the dashboards in Luzmo are rebuilt on the next visit, so a push is all it takes.
+    const contentVersion = (() => {
+      const src = JSON.stringify({ pages: P.pages, drill: (P.drilldowns || []).map((d) => [d.column, d.label]), theme: dashboardTheme(P), engine: 2 });
+      let h = 5381;
+      for (let i = 0; i < src.length; i++) h = ((h * 33) ^ src.charCodeAt(i)) >>> 0;
+      return h.toString(36);
+    })();
 
     function columnRef(dataset, column) {
       const ds = state.datasets[dataset];
@@ -359,6 +368,7 @@
       }
       const dashboards = await listSecurables('dashboard', ['id', 'name', 'custom_metadata']);
       state.dashboardId = dashboards.find((r) => nameOf(r) === demoName())?.id || null;
+      state.templateVersions = Object.fromEntries(dashboards.map((r) => [r.id, (r.custom_metadata || r.customMetadata || {}).kitVersion || null]));
       state.pageDashboards = {};
       for (const page of P.pages) {
         const found = dashboards.find((r) => nameOf(r) === pageName(page));
@@ -376,6 +386,15 @@
     }
 
     const ready = () => Object.keys(P.datasets).every((k) => state.datasets[k]?.id);
+    const templateIds = () => [state.dashboardId, ...P.pages.map((p) => state.pageDashboards[p.id])];
+    const needsSync = () => ready() && templateIds().some((id) => !id || state.templateVersions[id] !== contentVersion);
+
+    // Rebuilds theme and template dashboards. Data and the users' own dashboards are left alone.
+    async function syncTemplates() {
+      log('Updating the theme and dashboards to the latest design');
+      await setupTheme();
+      await setupDashboards();
+    }
 
     // ---------- setup steps (each one short, so a serverless function can run it) ----------
     async function setupTheme() {
@@ -454,9 +473,12 @@
 
     async function upsertNamed(name, contents, existing) {
       const found = existing.find((r) => nameOf(r) === name);
+      // kitTemplate, not kit: user dashboards are recognised by custom_metadata.kit.
+      const custom_metadata = { kitTemplate: P.slug, kitVersion: contentVersion };
       let id = found?.id;
-      if (id) await call('securable', { action: 'update', id, properties: { contents } });
-      else id = idOf(await call('securable', { action: 'create', properties: { type: 'dashboard', name: { en: name }, contents } }));
+      if (id) await call('securable', { action: 'update', id, properties: { contents, custom_metadata } });
+      else id = idOf(await call('securable', { action: 'create', properties: { type: 'dashboard', name: { en: name }, contents, custom_metadata } }));
+      state.templateVersions[id] = contentVersion;
       await linkDatasets(id, Object.values(state.datasets).map((d) => d.id));
       return id;
     }
@@ -609,7 +631,7 @@
     }
 
     return {
-      state, ready, discover, mintToken, visibleDashboards, listSchedules,
+      state, ready, needsSync, syncTemplates, discover, mintToken, visibleDashboards, listSchedules,
       setupTheme, setupDataChunk, setupColumns, setupDashboards,
       createDashboard, saveItems, getItems,
       specSlots, specFilters, drillFilters

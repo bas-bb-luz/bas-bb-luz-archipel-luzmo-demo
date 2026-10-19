@@ -30,7 +30,7 @@ The API key and token stay on the server. The browser only gets short-lived embe
 - **Drill-down.** Click a department or learning category in a chart and choose "Drill into". A detail page opens for that value, still scoped to the organisation. Defined under `drilldowns` in `prospect.json`.
 - **AI assistant** in the corner. It answers questions with charts, builds dashboards and changes the open one. The report builder also has "Prompt to chart".
 
-After changing `prospect.json` (pages, charts, drill-downs), open the site with `?setup` and run the setup again so the Luzmo dashboards are updated.
+After a change to `prospect.json` (pages, charts, drill-downs) or the theme, just push. The first visit after the deploy notices the new design and rebuilds the theme and template dashboards in Luzmo. Data and users' own dashboards are left alone. Run `?setup` only when the data itself changes.
 
 ## Run locally
 

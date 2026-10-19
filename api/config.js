@@ -10,6 +10,8 @@ module.exports = handler(async () => {
   if (configured) {
     try {
       const core = await getCore({ fresh: true });
+      // First visit after a deploy that changed the dashboard design: update Luzmo to match.
+      if (core.needsSync()) await core.syncTemplates();
       state = core.state;
       ready = core.ready();
     } catch (err) {
